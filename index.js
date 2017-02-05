@@ -10,7 +10,7 @@ var exists = fs.existsSync(file);
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database(file);
 
-var userid = 1;
+var userid = 0;
 
 db.serialize(function() {
   if(!exists) {
@@ -52,23 +52,27 @@ app.get('/signup', function(req, res){
   var firstname = req.query.firstname;
   var lastname = req.query.lastname;
 
-  var emailDB = db.get("SELECT firstname FROM users WHERE email=?", user, function(error, row) {
+  db.get("SELECT firstname FROM users WHERE email=?", user, function(error, row) {
     if (row !== undefined) {
       console.log("user with that email already exists\n");
+      res.sendFile(path.join(__dirname + "/login.html"));
     }
-    console.log(emailDB);
+    else {
+      //need to implement hashing
+      userid += 1;
+      db.run("INSERT INTO users (email, password, firstname, lastname, userid) VALUES (?,?,?,?,?)", [user, pw, firstname, lastname, userid]);
+      db.get("SELECT userid, firstname, lastname, email, password FROM users WHERE userid=?", userid, function(error, row){
+        console.log(row);
+        console.log(error);
+      })
+      res.sendFile(path.join(__dirname + "/login.html"));
+    }
   })
 
   if (pw != confirmpw){
     console.log("passwords didn't match");
     //error
-  }
-  else {
-    userid += 1;
-    db.serialize(function(){
-      var stmt = db.prepare("INSERT INTO users (email, password, firstname, lastname) VALUES (?,?,?,?)", [user, pw, firstname, lastname, userid]);
-      stmt.finalize();
-    })
+    res.sendFile(path.join(__dirname + "/signup.html"));
   }
 });
 
