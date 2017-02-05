@@ -28,16 +28,26 @@ app.get('/login-page', function(req, res) {
     console.log("loaded login\n");
 });
 
-app.post('/login', function(req, res){
+app.get('/login', function(req, res){
     var user = req.query.email;
     var pw = req.query.password;
-    // var response =
-    // if checkLogin(user, pw){
-    //     res.sendFile(path.join(__dirname + '/todos.html'));
-    // }
-    // else {
-    //     //error!
-    // }
+    db.get("SELECT email, password FROM users WHERE email=?", user, function(error, row){
+      if (error == null){
+        console.log(row);
+        // console.log(row.email);
+        if (row.email == user && row.password == pw){
+          res.sendFile(path.join(__dirname + '/todos.html'));
+        }
+        else {
+          //error
+          console.log("passwords didn't match\n");
+          res.sendFile(path.join(__dirname + "/login.html"));
+        }
+      }
+      else {
+        console.log(error);
+      }
+    })
 })
 
 app.get('/signup-page', function(req, res) {
@@ -75,11 +85,5 @@ app.get('/signup', function(req, res){
     res.sendFile(path.join(__dirname + "/signup.html"));
   }
 });
-
-// function checkLogin(user, pw){
-//     if (user.length() <= 50 && pw.length() <= 50){
-//
-//     }
-// }
 
 app.listen(process.env.PORT || 4000);
