@@ -3,87 +3,52 @@
 var express = require('express');
 var app = express();
 var router = express.Router();
-var path = require('path');
-var fs = require("fs");
-var file = "foo.db";
-var exists = fs.existsSync(file);
-var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database(file);
 
-var userid = 0;
+var exphbs = require('express-handlebars');
+app.engine('.hbs', exphbs({extname: '.hbs'}));
+app.set('view engine', '.hbs');
 
-db.serialize(function() {
-  if(!exists) {
-    db.run("CREATE TABLE users (email TEXT, password TEXT, firstname TEXT, lastname TEXT, userid INT)");
-  }
-});
+var userControllers = require('./controllers/userControllers.js');
 
 app.get('/', function(req, res) {
-    res.sendFile(path.join(__dirname + "/index.html"));
-    console.log("loaded index\n");
+    res.render('../views/homeView.hbs');
+    console.log("loaded index");
 });
 
 app.get('/login-page', function(req, res) {
-    res.sendFile(path.join(__dirname + "/login.html"));
+    res.render('../views/loginView.hbs');
     console.log("loaded login\n");
 });
 
-app.get('/login', function(req, res){
-    var user = req.query.email;
-    var pw = req.query.password;
-    db.get("SELECT email, password FROM users WHERE email=?", user, function(error, row){
-      if (error == null){
-        console.log(row);
-        // console.log(row.email);
-        if (row.email == user && row.password == pw){
-          res.sendFile(path.join(__dirname + '/todos.html'));
-        }
-        else {
-          //error
-          console.log("passwords didn't match\n");
-          res.sendFile(path.join(__dirname + "/login.html"));
-        }
-      }
-      else {
-        console.log(error);
-      }
-    })
-})
+// app.get('/login', function(req, res){
+//     var user = req.query.email;
+//     var pw = req.query.password;
+//     usersDB.get("SELECT email, password FROM users WHERE email=?", user, function(error, row){
+//       if (error == null){
+//         console.log(row);
+//         // console.log(row.email);
+//         if (row.email == user && row.password == sha1(pw)){
+//           res.render('../views/tasksView.hbs');
+//         }
+//         else {
+//           //error
+//           console.log("passwords didn't match\n");
+//           res.render('../views/loginView.hbs');
+//         }
+//       }
+//       else {
+//         console.log(error);
+//       }
+//     })
+// })
 
 app.get('/signup-page', function(req, res) {
-    res.sendFile(path.join(__dirname + "/signup.html"));
-    console.log("loaded signup\n");
+    res.render('../views/signupView.hbs');
+    console.log("loaded signup");
 });
 
 app.get('/signup', function(req, res){
-  var user = req.query.email;
-  var pw = req.query.password;
-  var confirmpw = req.query.confirmpassword;
-  var firstname = req.query.firstname;
-  var lastname = req.query.lastname;
-
-  db.get("SELECT firstname FROM users WHERE email=?", user, function(error, row) {
-    if (row !== undefined) {
-      console.log("user with that email already exists\n");
-      res.sendFile(path.join(__dirname + "/login.html"));
-    }
-    else {
-      //need to implement hashing
-      userid += 1;
-      db.run("INSERT INTO users (email, password, firstname, lastname, userid) VALUES (?,?,?,?,?)", [user, pw, firstname, lastname, userid]);
-      db.get("SELECT userid, firstname, lastname, email, password FROM users WHERE userid=?", userid, function(error, row){
-        console.log(row);
-        console.log(error);
-      })
-      res.sendFile(path.join(__dirname + "/login.html"));
-    }
-  })
-
-  if (pw != confirmpw){
-    console.log("passwords didn't match");
-    //error
-    res.sendFile(path.join(__dirname + "/signup.html"));
-  }
+  userControllers.addUser(req.res);
 });
 
 app.listen(process.env.PORT || 4000);
